@@ -279,7 +279,7 @@ const AboutModal = (props) => {
 
         <p>
           Created by{" "}
-          <a href="https://www.sunny.ng" target="_blank">
+          <a href="https://www.kevinzheng.fyi" target="_blank">
             Kevin Zheng
           </a>
         </p>
