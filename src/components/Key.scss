@@ -1,5 +1,5 @@
 .keyboard .stretched.column.key {
-  padding: 0!important;
+  padding: 0 !important;
 
   .correct {
     background-color: #6aaa64;
@@ -19,7 +19,7 @@
 
   .inverted {
     background-color: #818384;
-    box-shadow: none!important;
+    box-shadow: none !important;
   }
 
   .inverted.correct {
@@ -39,7 +39,8 @@
   }
 }
 
-.ui.doubling.grid>.row>.column.key, .ui.grid>.doubling.row>.column.key {
-  padding-top: .1rem!important;
-  padding-bottom: .1rem!important;
+.ui.doubling.grid > .row > .column.key,
+.ui.grid > .doubling.row > .column.key {
+  padding-top: 0.1rem !important;
+  padding-bottom: 0.1rem !important;
 }

@@ -14,6 +14,8 @@ csv.each do |row|
   end
 end
 
+puts "Writing to JSON file"
+
 file = File.open("../src/data/transfers.json", "w")
 file.puts JSON.pretty_generate(transfers)
 file.close

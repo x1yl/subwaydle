@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Header, Segment, Icon, Message, Popup } from 'semantic-ui-react';
+import { useState, useEffect } from "react";
+import { Header, Segment, Icon, Message, Popup } from "semantic-ui-react";
 
-import GameGrid from './components/GameGrid';
-import Keyboard from './components/Keyboard';
-import AboutModal from './components/AboutModal';
-import SolutionModal from './components/SolutionModal';
-import StatsModal from './components/StatsModal';
-import SettingsModal from './components/SettingsModal';
+import GameGrid from "./components/GameGrid";
+import Keyboard from "./components/Keyboard";
+import AboutModal from "./components/AboutModal";
+import SolutionModal from "./components/SolutionModal";
+import StatsModal from "./components/StatsModal";
+import SettingsModal from "./components/SettingsModal";
 
 import {
   isAccessible,
@@ -20,21 +20,22 @@ import {
   todaysSolution,
   todayGameIndex,
   NIGHT_GAMES,
-} from './utils/answerValidations';
+  getPuzzleType,
+} from "./utils/answerValidations";
 
 import {
   loadGameStateFromLocalStorage,
   saveGameStateToLocalStorage,
-  isNewToGame
-} from './utils/localStorage';
+  isNewToGame,
+} from "./utils/localStorage";
 
-import { addStatsForCompletedGame, loadStats } from './utils/stats';
+import { addStatsForCompletedGame, loadStats } from "./utils/stats";
 
-import { loadSettings } from './utils/settings';
+import { loadSettings } from "./utils/settings";
 
-import stations from './data/stations.json';
+import stations from "./data/stations.json";
 
-import './App.scss';
+import "./App.scss";
 
 const ATTEMPTS = 6;
 const ALERT_TIME_MS = 2000;
@@ -62,16 +63,25 @@ const App = () => {
       }
       return [];
     }
-    const gameWasWon = loaded.guesses.map((g) => g.join('-')).includes(flattenedTodaysTrip())
+    const gameWasWon = loaded.guesses
+      .map((g) => g.join("-"))
+      .includes(flattenedTodaysTrip());
     if (gameWasWon) {
       setIsGameWon(true);
       setIsSolutionsOpen(true);
     }
     if (loaded.guesses.length === 6 && !gameWasWon) {
-      setIsGameLost(true)
+      setIsGameLost(true);
       setIsSolutionsOpen(true);
     }
-    updateGuessStatuses(loaded.guesses, setCorrectRoutes, setSimilarRoutes, setPresentRoutes, setAbsentRoutes, setSimilarRoutesIndexes);
+    updateGuessStatuses(
+      loaded.guesses,
+      setCorrectRoutes,
+      setSimilarRoutes,
+      setPresentRoutes,
+      setAbsentRoutes,
+      setSimilarRoutesIndexes
+    );
     return loaded.guesses;
   });
   const [stats, setStats] = useState(() => loadStats());
@@ -80,22 +90,27 @@ const App = () => {
   const solution = todaysSolution();
 
   useEffect(() => {
-    saveGameStateToLocalStorage({ guesses, answer: flattenedTodaysTrip() })
-  }, [guesses])
+    saveGameStateToLocalStorage({ guesses, answer: flattenedTodaysTrip() });
+  }, [guesses]);
 
   const onChar = (routeId) => {
-    if (!isStatsOpen && !isGameWon && currentGuess.length < 3 && guesses.length < ATTEMPTS) {
+    if (
+      !isStatsOpen &&
+      !isGameWon &&
+      currentGuess.length < 3 &&
+      guesses.length < ATTEMPTS
+    ) {
       if (!routesWithNoService().includes(routeId)) {
         setCurrentGuess([...currentGuess, routeId]);
       }
     }
-  }
+  };
 
   const onDelete = () => {
     if (currentGuess.length > 0) {
       setCurrentGuess(currentGuess.slice(0, currentGuess.length - 1));
     }
-  }
+  };
 
   const onEnter = () => {
     const guessCount = guesses.length;
@@ -106,7 +121,7 @@ const App = () => {
     if (currentGuess.length !== 3) {
       setIsNotEnoughRoutes(true);
       setTimeout(() => {
-        setIsNotEnoughRoutes(false)
+        setIsNotEnoughRoutes(false);
       }, ALERT_TIME_MS);
       return;
     }
@@ -114,7 +129,7 @@ const App = () => {
     if (!isValidGuess(currentGuess)) {
       setIsGuessInvalid(true);
       setTimeout(() => {
-        setIsGuessInvalid(false)
+        setIsGuessInvalid(false);
       }, ALERT_TIME_MS);
       return;
     }
@@ -133,7 +148,7 @@ const App = () => {
       similarRoutes,
       presentRoutes,
       absentRoutes,
-      similarRoutesIndexes,
+      similarRoutesIndexes
     );
 
     setGuesses(newGuesses);
@@ -153,23 +168,23 @@ const App = () => {
       setIsGameLost(true);
       setIsSolutionsOpen(true);
     }
-  }
+  };
 
   const onSolutionsClose = () => {
     setIsSolutionsOpen(false);
-  }
+  };
 
   const onStatsClose = () => {
     setIsStatsOpen(false);
-  }
+  };
 
   const onAboutClose = () => {
     setIsAboutOpen(false);
-  }
+  };
 
   const onSettingsClose = () => {
     setIsSettingsOpen(false);
-  }
+  };
 
   const handleStatsOpen = () => {
     if (isGameWon || isGameLost) {
@@ -177,64 +192,98 @@ const App = () => {
     } else {
       setIsStatsOpen(true);
     }
-  }
+  };
 
   const handleSettingsOpen = () => {
     setIsSettingsOpen(true);
-  }
+  };
 
   const handleAboutOpen = () => {
     setIsAboutOpen(true);
-  }
+  };
 
-  const isDarkMode = (NIGHT_GAMES.includes(todayGameIndex())) || (todayGameIndex() > Math.max(...NIGHT_GAMES) && settings.display.darkMode);
+  const isDarkMode =
+    NIGHT_GAMES.includes(todayGameIndex()) || settings.display.darkMode;
 
   return (
-    <div className={"outer-app-wrapper " + (isDarkMode ? 'dark' : '')}>
-      <Segment basic className='app-wrapper' inverted={isDarkMode}>
-        <Segment clearing basic className='header-wrapper' inverted={isDarkMode}>
-          <Header floated='left'>
-            {isNight && "Late Night "}
-            {(!isNight && isWeekend) && "Weekend "}Subwaydle
-            {isAccessible && " ♿️"}
-            {
-               isNight &&
-               <Popup
-               position='bottom center'
-                 trigger={
-                   <sup>[?]</sup>
-                 }
-               >
-               <Popup.Content>
-                 <p>Subwaydle now available in Dark Mode!</p>
-                 <p>Try solving this weekend's Subwaydle with late night routing patterns.</p>
-               </Popup.Content>
-               </Popup>
-             }
+    <div className={"outer-app-wrapper " + (isDarkMode ? "dark" : "")}>
+      <Segment basic className="app-wrapper" inverted={isDarkMode}>
+        <Segment
+          clearing
+          basic
+          className="header-wrapper"
+          inverted={isDarkMode}
+        >
+          <Header floated="left">
+            <div>
+              {isNight() && "Late Night "}
+              {!isNight() && isWeekend() && "Weekend "}Subwaydle
+              {isAccessible() && " ♿️"}
+            </div>
+            <div style={{ fontSize: "0.7em", marginTop: "5px" }}>
+              {getPuzzleType()}
+            </div>
+            {isNight() && (
+              <Popup position="bottom center" trigger={<sup>[?]</sup>}>
+                <Popup.Content>
+                  <p>Subwaydle now available in Dark Mode!</p>
+                  <p>
+                    Try solving this weekend's Subwaydle with late night routing
+                    patterns.
+                  </p>
+                </Popup.Content>
+              </Popup>
+            )}
           </Header>
-          <Icon className='float-right' inverted={isDarkMode} name='cog' size='large' link onClick={handleSettingsOpen} />
-          <Icon className='float-right' inverted={isDarkMode} name='chart bar' size='large' link onClick={handleStatsOpen} />
-          <Icon className='float-right' inverted={isDarkMode} name='question circle outline' size='large' link onClick={handleAboutOpen} />
+          <Icon
+            className="float-right"
+            inverted={isDarkMode}
+            name="cog"
+            size="large"
+            link
+            onClick={handleSettingsOpen}
+          />
+          <Icon
+            className="float-right"
+            inverted={isDarkMode}
+            name="chart bar"
+            size="large"
+            link
+            onClick={handleStatsOpen}
+          />
+          <Icon
+            className="float-right"
+            inverted={isDarkMode}
+            name="question circle outline"
+            size="large"
+            link
+            onClick={handleAboutOpen}
+          />
         </Segment>
-        { !isAccessible &&
-          <Header as='h5' textAlign='center' className='hint'>Travel from {stations[solution.origin].name} to {stations[solution.destination].name} using 2 transfers.</Header>
-        }
-        { isAccessible &&
-          <Header as='h5' textAlign='center' className='hint'>Travel from {stations[solution.origin].name} ♿️ to {stations[solution.destination].name} ♿️ using 2 acceessible transfers.</Header>
-        }
-        <Segment basic className='game-grid-wrapper'>
-          {
-            isNotEnoughRoutes &&
-            <Message negative floating attached='top'>
+        {!isAccessible() && (
+          <Header as="h5" textAlign="center" className="hint">
+            Travel from {stations[solution.origin].name} to{" "}
+            {stations[solution.destination].name} using 2 transfers.
+          </Header>
+        )}
+        {isAccessible() && (
+          <Header as="h5" textAlign="center" className="hint">
+            Travel from {stations[solution.origin].name} ♿️ to{" "}
+            {stations[solution.destination].name} ♿️ using 2 acceessible
+            transfers.
+          </Header>
+        )}
+        <Segment basic className="game-grid-wrapper">
+          {isNotEnoughRoutes && (
+            <Message negative floating attached="top">
               <Message.Header>Not enough trains for the trip</Message.Header>
             </Message>
-          }
-          {
-            isGuessInvalid &&
+          )}
+          {isGuessInvalid && (
             <Message negative>
               <Message.Header>Not a valid trip</Message.Header>
             </Message>
-          }
+          )}
           <GameGrid
             isDarkMode={isDarkMode}
             currentGuess={currentGuess}
@@ -256,13 +305,34 @@ const App = () => {
             absentRoutes={absentRoutes}
           />
         </Segment>
-        <AboutModal open={isAboutOpen} isDarkMode={isDarkMode} handleClose={onAboutClose} />
-        <SolutionModal open={isSolutionsOpen} isDarkMode={isDarkMode} isGameWon={isGameWon}  handleModalClose={onSolutionsClose} stats={stats} guesses={guesses} />
-        <StatsModal open={isStatsOpen} isDarkMode={isDarkMode} stats={stats} handleClose={onStatsClose} />
-        <SettingsModal open={isSettingsOpen} isDarkMode={isDarkMode} handleClose={onSettingsClose} onSettingsChange={setSettings} />
+        <AboutModal
+          open={isAboutOpen}
+          isDarkMode={isDarkMode}
+          handleClose={onAboutClose}
+        />
+        <SolutionModal
+          open={isSolutionsOpen}
+          isDarkMode={isDarkMode}
+          isGameWon={isGameWon}
+          handleModalClose={onSolutionsClose}
+          stats={stats}
+          guesses={guesses}
+        />
+        <StatsModal
+          open={isStatsOpen}
+          isDarkMode={isDarkMode}
+          stats={stats}
+          handleClose={onStatsClose}
+        />
+        <SettingsModal
+          open={isSettingsOpen}
+          isDarkMode={isDarkMode}
+          handleClose={onSettingsClose}
+          onSettingsChange={setSettings}
+        />
       </Segment>
     </div>
   );
-}
+};
 
 export default App;

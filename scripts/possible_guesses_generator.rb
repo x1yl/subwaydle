@@ -14,25 +14,41 @@ transfers = {}
 
 transfers_csv = File.read('data/common/transfers.txt')
 csv = CSV.parse(transfers_csv, headers: true)
+
+puts "Loading stations..."
+# First load stations
+station_stops = {}
+stations_csv = File.read('data/common/Stations.csv')
+stations = CSV.parse(stations_csv, headers: true)
+stations.each do |row|
+  station_stops[row['GTFS Stop ID']] = []
+end
+puts "Loaded #{station_stops.size} stations"
+
+puts "Processing transfers..."
+# Then process transfers only for existing stations
 csv.each do |row|
   next if row['from_stop_id'] == row['to_stop_id']
+  next unless station_stops[row['from_stop_id']] && station_stops[row['to_stop_id']]
+  
   if transfers[row['from_stop_id']]
     transfers[row['from_stop_id']] << row['to_stop_id']
   else
     transfers[row['from_stop_id']] = [row['to_stop_id']]
   end
 end
+puts "Processed #{transfers.size} transfer points"
 
 patterns.each do |p, routes|
+  puts "\nProcessing pattern: #{p}"
+  puts "Loading #{routes.size} routes..."
+
   answers = Set.new
   solutions = {}
-  station_stops = {}
   routings = {}
   latlng = {}
 
-  stations_csv = File.read('data/common/Stations.csv')
-  csv = CSV.parse(stations_csv, headers: true)
-  csv.each do |row|
+  stations.each do |row|
     station_stops[row['GTFS Stop ID']] = []
     latlng[row['GTFS Stop ID']] = Geokit::LatLng.new(row['GTFS Latitude'],row['GTFS Longitude'])
   end
@@ -48,6 +64,7 @@ patterns.each do |p, routes|
   end
 
   station_stops.each do |s1, routes|
+    print "\rProcessing station #{s1} with #{routes.size} routes...   "
     routes.each do |r1|
       i1 = routings[r1].index(s1)
 
@@ -99,8 +116,9 @@ patterns.each do |p, routes|
                           path3 = subrouting3[0..i3n]
 
                           route_exists_from_begin_to_end = false
-                          ([transfers[s1]].flatten.compact + [s1]).each do |ts1|
-                            ([transfers[s4]].flatten.compact + [s4]).each do |ts2|
+                          ([transfers[s1]].flatten.compact.select { |t| station_stops[t] } + [s1]).each do |ts1|
+                            ([transfers[s4]].flatten.compact.select { |t| station_stops[t] } + [s4]).each do |ts2|
+                              next unless station_stops[ts2]
                               station_stops[ts2].each do |sr|
                                 if routings[sr].include?(ts1)
                                   one_route_stops = (routings[sr].index(ts1) - routings[sr].index(ts2)).abs
@@ -172,6 +190,7 @@ patterns.each do |p, routes|
       end
     end
   end
+  puts "\nCompleted processing pattern #{p}"
 
   puts "Writing to JSON file - #{answers.size} entries"
 

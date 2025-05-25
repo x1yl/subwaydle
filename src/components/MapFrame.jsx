@@ -1,13 +1,13 @@
-import React, { useRef, useEffect, useState } from 'react';
-import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
+import React, { useRef, useEffect, useState } from "react";
+import mapboxgl from "!mapbox-gl"; // eslint-disable-line import/no-webpack-loader-syntax
 
-import { todaysTrip, todaysSolution } from '../utils/answerValidations';
+import { todaysTrip, todaysSolution } from "../utils/answerValidations";
 
 import stations from "../data/stations.json";
 import routes from "../data/routes.json";
 import shapes from "../data/shapes.json";
 
-import './MapFrame.scss';
+import "./MapFrame.scss";
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
@@ -28,47 +28,64 @@ const MapFrame = (props) => {
       solution.first_transfer_departure,
       solution.second_transfer_arrival,
       solution.second_transfer_departure,
-      solution.destination
+      solution.destination,
     ];
     return {
-      "type": "FeatureCollection",
-      "features": [...new Set(stops)].map((stopId) => {
+      type: "FeatureCollection",
+      features: [...new Set(stops)].map((stopId) => {
         const station = stations[stopId];
         return {
-          "type": "Feature",
-          "properties": {
-            "id": stopId,
-            "name": station.name,
+          type: "Feature",
+          properties: {
+            id: stopId,
+            name: station.name,
           },
-          "geometry": {
-            "type": "Point",
-            "coordinates": [station.longitude, station.latitude]
-          }
-        }
-      })
+          geometry: {
+            type: "Point",
+            coordinates: [station.longitude, station.latitude],
+          },
+        };
+      }),
     };
-  }
+  };
 
   const lineGeoJson = (line) => {
     const route = routes[line.route];
     let shape;
-    const beginCoord = [stations[line.begin].longitude, stations[line.begin].latitude];
-    const endCoord = [stations[line.end].longitude, stations[line.end].latitude];
+    const beginCoord = [
+      stations[line.begin].longitude,
+      stations[line.begin].latitude,
+    ];
+    const endCoord = [
+      stations[line.end].longitude,
+      stations[line.end].latitude,
+    ];
     let coordinates = [];
 
-    if (line.route === 'A') {
-      const lineA1 = shapes['A1'];
-      if (lineA1.some((coord) => coord[0] === beginCoord[0] && coord[1] === beginCoord[1]) && lineA1.some((coord) => coord[0] === endCoord[0] && coord[1] === endCoord[1])) {
-        shape = shapes['A1'];
+    if (line.route === "A") {
+      const lineA1 = shapes["A1"];
+      if (
+        lineA1.some(
+          (coord) => coord[0] === beginCoord[0] && coord[1] === beginCoord[1]
+        ) &&
+        lineA1.some(
+          (coord) => coord[0] === endCoord[0] && coord[1] === endCoord[1]
+        )
+      ) {
+        shape = shapes["A1"];
       } else {
-        shape = shapes['A2'];
+        shape = shapes["A2"];
       }
     } else {
       shape = shapes[line.route];
     }
 
-    const beginIndex = shape.findIndex((coord) => coord[0] === beginCoord[0] && coord[1] === beginCoord[1]);
-    const endIndex = shape.findIndex((coord) => coord[0] === endCoord[0] && coord[1] === endCoord[1]);
+    const beginIndex = shape.findIndex(
+      (coord) => coord[0] === beginCoord[0] && coord[1] === beginCoord[1]
+    );
+    const endIndex = shape.findIndex(
+      (coord) => coord[0] === endCoord[0] && coord[1] === endCoord[1]
+    );
 
     if (beginIndex < endIndex) {
       coordinates = shape.slice(beginIndex, endIndex + 1);
@@ -77,36 +94,36 @@ const MapFrame = (props) => {
     }
 
     return {
-      "type": "Feature",
-      "properties": {
-        "color": route.color,
+      type: "Feature",
+      properties: {
+        color: route.color,
       },
-      "geometry": {
-        "type": "LineString",
-        "coordinates": coordinates
-      }
-    }
-  }
+      geometry: {
+        type: "LineString",
+        coordinates: coordinates,
+      },
+    };
+  };
 
   useEffect(() => {
     if (map.current) return; // initialize map only once
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/theweekendest/ck1fhati848311cp6ezdzj5cm?optimize=true',
+      style: "mapbox://styles/fryvex/cmb36yvy700ac01qvfp3deajd?optimize=true",
       center: [lng, lat],
       bearing: MANHATTAN_TILT,
       minZoom: 9,
       zoom: zoom,
       maxBounds: [
         [-74.8113, 40.1797],
-        [-73.3584, 41.1247]
+        [-73.3584, 41.1247],
       ],
       maxPitch: 0,
     });
     map.current.dragRotate.disable();
     map.current.touchZoomRotate.disableRotation();
 
-    map.current.on('load', () => {
+    map.current.on("load", () => {
       map.current.resize();
       const trip = todaysTrip();
       const solution = todaysSolution();
@@ -132,48 +149,56 @@ const MapFrame = (props) => {
         coordinates = coordinates.concat(lineJson.geometry.coordinates);
         const layerId = `line-${i}`;
         map.current.addSource(layerId, {
-          "type": "geojson",
-          "data": lineJson
+          type: "geojson",
+          data: lineJson,
         });
         map.current.addLayer({
-          "id": layerId,
-          "type": "line",
-          "source": layerId,
-          "layout": {
+          id: layerId,
+          type: "line",
+          source: layerId,
+          layout: {
             "line-join": "miter",
             "line-cap": "round",
           },
-          "paint": {
+          paint: {
             "line-width": 2,
             "line-color": ["get", "color"],
-          }
+          },
         });
       });
       const stopsJson = stopsGeoJson();
       map.current.addSource("Stops", {
-        "type": "geojson",
-        "data": stopsJson
+        type: "geojson",
+        data: stopsJson,
       });
       map.current.addLayer({
-        "id": "Stops",
-        "type": "symbol",
-        "source": "Stops",
-        "layout": {
-          "text-field": ['get', 'name'],
+        id: "Stops",
+        type: "symbol",
+        source: "Stops",
+        layout: {
+          "text-field": ["get", "name"],
           "text-size": 12,
-          "text-font": ['Lato Bold', "Open Sans Bold","Arial Unicode MS Bold"],
+          "text-font": ["Lato Bold", "Open Sans Bold", "Arial Unicode MS Bold"],
           "text-optional": false,
           "text-justify": "auto",
-          'text-allow-overlap': false,
+          "text-allow-overlap": false,
           "text-padding": 1,
-          "text-variable-anchor": ["bottom-right", "top-right", "bottom-left", "top-left", "right", "left", "bottom"],
+          "text-variable-anchor": [
+            "bottom-right",
+            "top-right",
+            "bottom-left",
+            "top-left",
+            "right",
+            "left",
+            "bottom",
+          ],
           "text-radial-offset": 0.5,
           "icon-image": "express-stop",
-          "icon-size": 8/13,
+          "icon-size": 8 / 13,
           "icon-allow-overlap": true,
         },
-        "paint": {
-          "text-color": '#ffffff',
+        paint: {
+          "text-color": "#ffffff",
         },
       });
       const bounds = coordinates.reduce((bounds, coord) => {
@@ -192,13 +217,11 @@ const MapFrame = (props) => {
         });
       }
     });
-
-
   });
 
   useEffect(() => {
     if (!map.current) return; // wait for map to initialize
-    map.current.on('move', () => {
+    map.current.on("move", () => {
       setLng(map.current.getCenter().lng.toFixed(4));
       setLat(map.current.getCenter().lat.toFixed(4));
       setZoom(map.current.getZoom().toFixed(2));
@@ -210,6 +233,6 @@ const MapFrame = (props) => {
       <div ref={mapContainer} className="map-container" />
     </div>
   );
-}
+};
 
 export default MapFrame;
