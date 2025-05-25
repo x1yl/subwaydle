@@ -19,33 +19,29 @@ const SettingsModal = (props, state) => {
   };
 
   const darkModeToggleChanged = (event, value) => {
-    const settings = {
-      ...defaultSettings,
+    const newSettings = {
       ...settings,
       display: {
-        ...defaultSettings.display,
         ...settings.display,
         darkMode: value.checked,
       },
     };
-    saveSettings(settings);
-    setSettings(settings);
-    onSettingsChange(settings);
+    saveSettings(newSettings);
+    setSettings(newSettings);
+    onSettingsChange(newSettings);
   };
 
   const weekendToggleChanged = (event, value) => {
-    const settings = {
-      ...defaultSettings,
+    const newSettings = {
       ...settings,
       gameplay: {
-        ...defaultSettings.gameplay,
         ...settings.gameplay,
         includeWeekend: value.checked,
       },
     };
-    saveSettings(settings);
-    setSettings(settings);
-    onSettingsChange(settings);
+    saveSettings(newSettings);
+    setSettings(newSettings);
+    onSettingsChange(newSettings);
   };
 
   return (
