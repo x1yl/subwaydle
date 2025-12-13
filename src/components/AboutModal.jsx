@@ -158,7 +158,8 @@ const AboutModal = (props) => {
 
         <p>Created by <a href="https://www.sunny.ng" target="_blank">Sunny Ng</a><a href='https://twitter.com/_blahblahblah' target='_blank'><Icon name='twitter' link /></a></p>
         <p><a href="https://github.com/blahblahblah-/subwaydle" target="_blank">Source code</a>.</p>
-        <p>Check out my other NYC Subway related projects: <a href="https://www.theweekendest.com" target="_blank">The Weekendest</a> and <a href="https://www.goodservice.io" target="_blank">goodservice.io</a>.</p>
+        <p>Check out my other NYC Subway related project: <a href="https://subwaynow.app" target="_blank">Subway Now</a>, now on <a href="https://apps.apple.com/us/app/subway-now-live-nyc-train-map/id6476543418" target="_blank">iOS</a> and <a href="https://play.google.com/store/apps/details?id=io.goodservice.theweekendest" target="_blank">Android</a>.</p>
+        <p>Come join the <a href="https://www.transittechies.com/" target="_blank">Transit Techies NYC meetup</a>, to hang out with some like-minded folks and nerd out.</p>
       </Modal.Content>
     </Modal>
   );
