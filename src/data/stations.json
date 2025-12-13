@@ -580,7 +580,7 @@
     "latitude": 40.737335
   },
   "L03": {
-    "name": "14 St–Union Sq.",
+    "name": "14 St–Union Sq",
     "longitude": -73.99073,
     "latitude": 40.734789
   },
@@ -1615,7 +1615,7 @@
     "latitude": 40.737826
   },
   "133": {
-    "name": "Christopher St–Sheridan Sq",
+    "name": "Christopher St–Stonewall",
     "longitude": -74.002906,
     "latitude": 40.733422
   },
@@ -1710,7 +1710,7 @@
     "latitude": 40.671987
   },
   "239": {
-    "name": "Franklin Avenue–Medgar Evers College",
+    "name": "Franklin Av–Medgar Evers College",
     "longitude": -73.958131,
     "latitude": 40.670682
   },
@@ -1765,7 +1765,7 @@
     "latitude": 40.666235
   },
   "241": {
-    "name": "President Street–Medgar Evers College",
+    "name": "President St–Medgar Evers College",
     "longitude": -73.950683,
     "latitude": 40.667883
   },
@@ -2025,7 +2025,7 @@
     "latitude": 40.74307
   },
   "634": {
-    "name": "23 St",
+    "name": "23 St-Baruch College",
     "longitude": -73.986599,
     "latitude": 40.739864
   },
@@ -2205,7 +2205,7 @@
     "latitude": 40.802098
   },
   "227": {
-    "name": "Central Park North (110 St)",
+    "name": "110 St-Malcolm X Plaza",
     "longitude": -73.951822,
     "latitude": 40.799075
   },
