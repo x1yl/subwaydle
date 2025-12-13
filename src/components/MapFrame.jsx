@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
 
-import { todaysTrip, todaysSolution } from '../utils/answerValidations';
+import { isWeekend, todaysTrip, todaysSolution } from '../utils/answerValidations';
 
 import stations from "../data/stations.json";
 import routes from "../data/routes.json";
@@ -63,6 +63,8 @@ const MapFrame = (props) => {
       } else {
         shape = shapes['A2'];
       }
+    } else if (line.route === 'F' && isWeekend) {
+      shape = shapes['F-Weekend'];
     } else {
       shape = shapes[line.route];
     }
