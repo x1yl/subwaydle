@@ -4,8 +4,8 @@ import { checkGuessStatuses } from '../utils/answerValidations';
 import { loadSettings } from '../utils/settings';
 
 const CompletedRow = (props) => {
-  const { guess } = props;
-  const classNameArrays = checkGuessStatuses(guess)
+  const { guess, trip, solution } = props;
+  const classNameArrays = checkGuessStatuses(guess, trip, solution)
   const settings = loadSettings();
 
   return (

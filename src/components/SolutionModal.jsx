@@ -6,7 +6,7 @@ import TrainBullet from './TrainBullet';
 import MapFrame from './MapFrame';
 import Countdown from './Countdown';
 
-import { todaysTrip, todaysSolution, isAccessible } from '../utils/answerValidations';
+import { isAccessible } from '../utils/answerValidations';
 import { shareStatus } from '../utils/share';
 
 import stations from "../data/stations.json";
@@ -15,13 +15,11 @@ import './SolutionModal.scss';
 const BUTTON_PROMPT_MS = 2000;
 
 const SolutionModal = (props) => {
-  const { open, handleModalClose, isDarkMode, isGameWon, stats, guesses } = props;
+  const { open, handleModalClose, isDarkMode, isGameWon, stats, guesses, trip, solution, isPracticeMode, onNewPracticeGame } = props;
   const [isShareButtonShowCopied, setIsShareButtonShowCopied] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalHidden, setIsModalHidden] = useState(false);
   const modal = useRef(null);
-  const trip = todaysTrip();
-  const solution = todaysSolution();
   const title = isGameWon ? "Yay! You completed today's trip!" : "Aww, looks like you got lost on the subway...";
   const isIos = /iP(ad|od|hone)/i.test(window.navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /MacIntel/.test(navigator.platform));
 
@@ -66,8 +64,8 @@ const SolutionModal = (props) => {
       <Modal.Header>{ title }</Modal.Header>
       <Modal.Content>
         <Modal.Description>
-        <MapFrame />
-          <Header as='h3'>Today's Journey</Header>
+        <MapFrame trip={trip} solution={solution} />
+          <Header as='h3'>{isPracticeMode ? 'Practice Journey' : "Today's Journey"}</Header>
           { !isAccessible &&
             <>
               <TrainBullet id={trip[0]} size='small' /> from { stations[solution.origin].name } to { stations[solution.first_transfer_arrival].name }<br />
@@ -82,12 +80,28 @@ const SolutionModal = (props) => {
               <TrainBullet id={trip[2]} size='small' /> from { stations[solution.second_transfer_departure].name } ♿️ to { stations[solution.destination].name } ♿️
             </>
           }
-          <Stats isDarkMode={isDarkMode} stats={stats} />
-          <Countdown />
-          <Button positive icon labelPosition='right' onClick={handleShareClick} className='share-btn'>
-            { isShareButtonShowCopied ? 'Copied' : 'Share' }
-            <Icon name={isShareButtonShowCopied ? 'check' : 'share alternate'} />
-          </Button>
+          { isPracticeMode ? (
+            <>
+              <p><em>Practice mode — stats are not tracked.</em></p>
+              <Button primary icon labelPosition='right' onClick={onNewPracticeGame} className='share-btn'>
+                New Practice Game
+                <Icon name='redo' />
+              </Button>
+              <Button basic icon labelPosition='right' onClick={handleClose} className='share-btn'>
+                Back to Daily Game
+                <Icon name='calendar' />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Stats isDarkMode={isDarkMode} stats={stats} />
+              <Countdown />
+              <Button positive icon labelPosition='right' onClick={handleShareClick} className='share-btn'>
+                { isShareButtonShowCopied ? 'Copied' : 'Share' }
+                <Icon name={isShareButtonShowCopied ? 'check' : 'share alternate'} />
+              </Button>
+            </>
+          )}
         </Modal.Description>
       </Modal.Content>
     </Modal>
