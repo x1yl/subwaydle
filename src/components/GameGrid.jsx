@@ -6,7 +6,7 @@ import EmptyRow from './EmptyRow';
 import './GameGrid.scss';
 
 const GameGrid = (props) => {
-  const { isDarkMode, currentGuess, guesses, attempts, inPlay } = props;
+  const { isDarkMode, currentGuess, guesses, attempts, inPlay, trip, solution } = props;
   const emptyRows = [...Array(inPlay ? (attempts - 1) : attempts).keys()];
   return (
     <Grid centered columns={4} className={isDarkMode ? 'game-grid dark' : 'game-grid'}>
@@ -14,7 +14,7 @@ const GameGrid = (props) => {
         guesses.slice().map((g, i) => {
           emptyRows.pop();
           return (
-            <CompletedRow id={i} guess={g} key={i} />
+            <CompletedRow id={i} guess={g} key={i} trip={trip} solution={solution} />
           )
         })
       }

@@ -5,12 +5,16 @@ import weekendAnswers from './../data/weekend/answers.json';
 import weekendSolutions from './../data/weekend/solutions.json';
 import weekendRoutings from './../data/weekend/routings.json';
 import nightAnswers from './../data/night/answers.json';
-import nightSolutions from './../data/night/solutions.json';
 import nightRoutings from './../data/night/routings.json';
 import accessibleAnswers from './../data/accessible/answers.json';
 import accessibleSolutions from './../data/accessible/solutions.json';
 import accessibleRoutings from './../data/accessible/routings.json';
 import transfers from './../data/transfers.json';
+
+const weekdayAnswerSet = new Set(weekdayAnswers.map(a => a.join('-')));
+const weekendAnswerSet = new Set(weekendAnswers.map(a => a.join('-')));
+const nightAnswerSet = new Set(nightAnswers.map(a => a.join('-')));
+const accessibleAnswerSet = new Set(accessibleAnswers.map(a => a.join('-')));
 
 const ROUTES_WITH_NO_WEEKEND_SERVICE = ['B', 'W'];
 const ROUTES_WITH_NO_NIGHT_SERVICE = ['B', 'C', 'W', 'GS'];
@@ -22,11 +26,10 @@ const DEKALB_AV_FLATBUSH_STOP = "R30";
 const today = new Date();
 const now = Date.now();
 
-const isSimilarToAnswerTrain = (guess, index) => {
+const isSimilarToAnswerTrain = (guess, index, trip, solution) => {
   let begin;
   let end;
-  const answer = todaysTrip()[index];
-  const solution = todaysSolution();
+  const answer = trip[index];
   const routings = todaysRoutings();
   switch (index) {
     case 0:
@@ -100,15 +103,15 @@ export const routesWithNoService = () => {
 export const isValidGuess = (guess) => {
   const flattenedGuess = guess.join('-');
   if (isNight) {
-    return !!nightSolutions[flattenedGuess];
+    return nightAnswerSet.has(flattenedGuess);
   }
   if (isAccessible) {
-    return !!accessibleSolutions[flattenedGuess];
+    return accessibleAnswerSet.has(flattenedGuess);
   }
   if (isWeekend) {
-    return !!weekendSolutions[flattenedGuess];
+    return weekendAnswerSet.has(flattenedGuess);
   }
-  return !!weekdaySolutions[flattenedGuess];
+  return weekdayAnswerSet.has(flattenedGuess);
 }
 
 export const todayGameIndex = () => {
@@ -173,22 +176,53 @@ export const todaysSolution = () => {
   return weekdaySolutions[todaysTrip().join("-")];
 }
 
-export const isWinningGuess = (guess) => {
-  return guess.join('-') === todaysTrip().join('-');
+export const getSolution = (trip) => {
+  const key = trip.join('-');
+  if (isNight) {
+    return weekendSolutions[key];
+  }
+  if (isAccessible) {
+    return accessibleSolutions[key];
+  }
+  if (isWeekend) {
+    return weekendSolutions[key];
+  }
+  return weekdaySolutions[key];
 }
 
-export const updateGuessStatuses = (guesses, setCorrectRoutes, setSimilarRoutes, setPresentRoutes, setAbsentRoutes, setSimilarRoutesIndexes, correctRoutes, similarRoutes, presentRoutes, absentRoutes, similarRoutesIndexes) => {
+const todaysAnswers = () => {
+  if (isNight) return nightAnswers;
+  if (isAccessible) return accessibleAnswers;
+  if (isWeekend) return weekendAnswers;
+  return weekdayAnswers;
+}
+
+export const getPracticeTrip = () => {
+  const answers = todaysAnswers();
+  const dailyTripStr = flattenedTodaysTrip();
+  const filtered = answers.filter(t => t.join('-') !== dailyTripStr);
+  return filtered[Math.floor(Math.random() * filtered.length)];
+}
+
+export const isWinningGuess = (guess, tripOverride) => {
+  return guess.join('-') === (tripOverride || todaysTrip()).join('-');
+}
+
+export const updateGuessStatuses = (guesses, setCorrectRoutes, setSimilarRoutes, setPresentRoutes, setAbsentRoutes, setSimilarRoutesIndexes, correctRoutes, similarRoutes, presentRoutes, absentRoutes, similarRoutesIndexes, tripOverride, solutionOverride) => {
   const correct = correctRoutes || [];
   let similar = similarRoutes || [];
   const present = presentRoutes || [];
   const absent = absentRoutes || [];
   const similarIndexes = similarRoutesIndexes || {};
 
+  const trip = tripOverride || todaysTrip();
+  const solution = solutionOverride || todaysSolution();
+
   guesses.forEach((guess) => {
     const remainingRoutes = [];
     const remainingGuessPositions = [];
 
-    todaysTrip().forEach((routeId, index) => {
+    trip.forEach((routeId, index) => {
       if (guess[index] === routeId) {
         correct.push(routeId);
         Object.keys(similarIndexes).forEach((r) => {
@@ -205,7 +239,7 @@ export const updateGuessStatuses = (guesses, setCorrectRoutes, setSimilarRoutes,
         remainingRoutes.push(routeId);
         remainingGuessPositions.push(index);
 
-        if (isSimilarToAnswerTrain(guess[index], index)) {
+        if (isSimilarToAnswerTrain(guess[index], index, trip, solution)) {
           similar.push(guess[index]);
           if (similarIndexes[guess[index]] && !similarIndexes[guess[index]].includes(index)) {
             similarIndexes.push(index);
@@ -232,18 +266,20 @@ export const updateGuessStatuses = (guesses, setCorrectRoutes, setSimilarRoutes,
   setSimilarRoutesIndexes(similarIndexes);
 }
 
-export const checkGuessStatuses = (guess) => {
+export const checkGuessStatuses = (guess, tripOverride, solutionOverride) => {
+  const trip = tripOverride || todaysTrip();
+  const solution = solutionOverride || todaysSolution();
   const results = ['absent', 'absent', 'absent'];
   const remainingRoutes = [];
   const remainingGuessPositions = [];
 
-  todaysTrip().forEach((routeId, index) => {
+  trip.forEach((routeId, index) => {
     if (guess[index] === routeId) {
       results[index] = 'correct';
     } else {
       remainingRoutes.push(routeId);
       remainingGuessPositions.push(index);
-      if (isSimilarToAnswerTrain(guess[index], index)) {
+      if (isSimilarToAnswerTrain(guess[index], index, trip, solution)) {
         results[index] = 'similar';
       }
     }

@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
 
-import { isWeekend, todaysTrip, todaysSolution } from '../utils/answerValidations';
+import { isWeekend } from '../utils/answerValidations';
 
 import stations from "../data/stations.json";
 import routes from "../data/routes.json";
@@ -14,12 +14,12 @@ mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 const MANHATTAN_TILT = 29;
 
 const MapFrame = (props) => {
+  const { trip, solution } = props;
   const mapContainer = useRef(null);
   const map = useRef(null);
   const [lng, setLng] = useState(-73.98119);
   const [lat, setLat] = useState(40.75855);
   const [zoom, setZoom] = useState(12);
-  const solution = todaysSolution();
 
   const stopsGeoJson = () => {
     const stops = [
@@ -110,8 +110,6 @@ const MapFrame = (props) => {
 
     map.current.on('load', () => {
       map.current.resize();
-      const trip = todaysTrip();
-      const solution = todaysSolution();
       let coordinates = [];
       [
         {

@@ -17,7 +17,10 @@ import {
   isWinningGuess,
   updateGuessStatuses,
   flattenedTodaysTrip,
+  todaysTrip,
   todaysSolution,
+  getSolution,
+  getPracticeTrip,
   todayGameIndex,
   NIGHT_GAMES,
 } from './utils/answerValidations';
@@ -54,6 +57,8 @@ const App = () => {
   const [similarRoutes, setSimilarRoutes] = useState([]);
   const [similarRoutesIndexes, setSimilarRoutesIndexes] = useState({});
   const [correctRoutes, setCorrectRoutes] = useState([]);
+  const [isPracticeMode, setIsPracticeMode] = useState(false);
+  const [practiceTrip, setPracticeTrip] = useState(null);
   const [guesses, setGuesses] = useState(() => {
     const loaded = loadGameStateFromLocalStorage();
     if (loaded?.answer !== flattenedTodaysTrip()) {
@@ -77,11 +82,60 @@ const App = () => {
   const [stats, setStats] = useState(() => loadStats());
   const [settings, setSettings] = useState(() => loadSettings());
 
-  const solution = todaysSolution();
+  const currentTrip = isPracticeMode && practiceTrip ? practiceTrip : todaysTrip();
+  const currentSolution = isPracticeMode && practiceTrip ? getSolution(practiceTrip) : todaysSolution();
 
   useEffect(() => {
-    saveGameStateToLocalStorage({ guesses, answer: flattenedTodaysTrip() })
-  }, [guesses])
+    if (!isPracticeMode) {
+      saveGameStateToLocalStorage({ guesses, answer: flattenedTodaysTrip() });
+    }
+  }, [guesses, isPracticeMode])
+
+  const resetGameStatus = () => {
+    setGuesses([]);
+    setCurrentGuess([]);
+    setIsGameWon(false);
+    setIsGameLost(false);
+    setIsSolutionsOpen(false);
+    setAbsentRoutes([]);
+    setPresentRoutes([]);
+    setSimilarRoutes([]);
+    setSimilarRoutesIndexes({});
+    setCorrectRoutes([]);
+  }
+
+  const handleEnterPracticeMode = () => {
+    const trip = getPracticeTrip();
+    setPracticeTrip(trip);
+    setIsPracticeMode(true);
+    resetGameStatus();
+  }
+
+  const handleExitPracticeMode = () => {
+    setIsPracticeMode(false);
+    setPracticeTrip(null);
+    resetGameStatus();
+    // Restore daily game state from localStorage
+    const loaded = loadGameStateFromLocalStorage();
+    if (loaded?.answer === flattenedTodaysTrip()) {
+      const gameWasWon = loaded.guesses.map((g) => g.join('-')).includes(flattenedTodaysTrip());
+      setGuesses(loaded.guesses);
+      if (gameWasWon) {
+        setIsGameWon(true);
+        setIsSolutionsOpen(true);
+      } else if (loaded.guesses.length === 6) {
+        setIsGameLost(true);
+        setIsSolutionsOpen(true);
+      }
+      updateGuessStatuses(loaded.guesses, setCorrectRoutes, setSimilarRoutes, setPresentRoutes, setAbsentRoutes, setSimilarRoutesIndexes);
+    }
+  }
+
+  const handleNewPracticeGame = () => {
+    const trip = getPracticeTrip();
+    setPracticeTrip(trip);
+    resetGameStatus();
+  }
 
   const onChar = (routeId) => {
     if (!isStatsOpen && !isGameWon && currentGuess.length < 3 && guesses.length < ATTEMPTS) {
@@ -119,7 +173,7 @@ const App = () => {
       return;
     }
 
-    const winningGuess = isWinningGuess(currentGuess);
+    const winningGuess = isWinningGuess(currentGuess, currentTrip);
     const newGuesses = [...guesses, currentGuess];
 
     updateGuessStatuses(
@@ -134,22 +188,28 @@ const App = () => {
       presentRoutes,
       absentRoutes,
       similarRoutesIndexes,
+      currentTrip,
+      currentSolution,
     );
 
     setGuesses(newGuesses);
     setCurrentGuess([]);
 
     if (winningGuess) {
-      const updatedStats = addStatsForCompletedGame(stats, guessCount);
-      setStats(updatedStats);
+      if (!isPracticeMode) {
+        const updatedStats = addStatsForCompletedGame(stats, guessCount);
+        setStats(updatedStats);
+      }
       setIsGameWon(true);
       setIsSolutionsOpen(true);
       return;
     }
 
     if (newGuesses.length === 6) {
-      const updatedStats = addStatsForCompletedGame(stats, guessCount + 1);
-      setStats(updatedStats);
+      if (!isPracticeMode) {
+        const updatedStats = addStatsForCompletedGame(stats, guessCount + 1);
+        setStats(updatedStats);
+      }
       setIsGameLost(true);
       setIsSolutionsOpen(true);
     }
@@ -172,6 +232,7 @@ const App = () => {
   }
 
   const handleStatsOpen = () => {
+    if (isPracticeMode) return;
     if (isGameWon || isGameLost) {
       setIsSolutionsOpen(true);
     } else {
@@ -197,6 +258,7 @@ const App = () => {
             {isNight && "Late Night "}
             {(!isNight && isWeekend) && "Weekend "}Subwaydle
             {isAccessible && " ♿️"}
+            {isPracticeMode && " — Practice"}
             {
                isNight &&
                <Popup
@@ -213,14 +275,25 @@ const App = () => {
              }
           </Header>
           <Icon className='float-right' inverted={isDarkMode} name='cog' size='large' link onClick={handleSettingsOpen} />
-          <Icon className='float-right' inverted={isDarkMode} name='chart bar' size='large' link onClick={handleStatsOpen} />
+          { !isPracticeMode &&
+            <Icon className='float-right' inverted={isDarkMode} name='chart bar' size='large' link onClick={handleStatsOpen} />
+          }
           <Icon className='float-right' inverted={isDarkMode} name='question circle outline' size='large' link onClick={handleAboutOpen} />
+          <Icon
+            className='float-right'
+            inverted={isDarkMode}
+            name={isPracticeMode ? 'calendar' : 'play circle'}
+            size='large'
+            link
+            onClick={isPracticeMode ? handleExitPracticeMode : handleEnterPracticeMode}
+            title={isPracticeMode ? 'Back to Daily Game' : 'Practice Mode'}
+          />
         </Segment>
         { !isAccessible &&
-          <Header as='h5' textAlign='center' className='hint'>Travel from {stations[solution.origin].name} to {stations[solution.destination].name} using 2 transfers.</Header>
+          <Header as='h5' textAlign='center' className='hint'>Travel from {stations[currentSolution.origin].name} to {stations[currentSolution.destination].name} using 2 transfers.</Header>
         }
         { isAccessible &&
-          <Header as='h5' textAlign='center' className='hint'>Travel from {stations[solution.origin].name} ♿️ to {stations[solution.destination].name} ♿️ using 2 acceessible transfers.</Header>
+          <Header as='h5' textAlign='center' className='hint'>Travel from {stations[currentSolution.origin].name} ♿️ to {stations[currentSolution.destination].name} ♿️ using 2 acceessible transfers.</Header>
         }
         <Segment basic className='game-grid-wrapper'>
           {
@@ -241,6 +314,8 @@ const App = () => {
             guesses={guesses}
             attempts={ATTEMPTS}
             inPlay={!isGameWon && !isGameLost && guesses.length < 6}
+            trip={currentTrip}
+            solution={currentSolution}
           />
         </Segment>
         <Segment basic>
@@ -257,7 +332,18 @@ const App = () => {
           />
         </Segment>
         <AboutModal open={isAboutOpen} isDarkMode={isDarkMode} handleClose={onAboutClose} />
-        <SolutionModal open={isSolutionsOpen} isDarkMode={isDarkMode} isGameWon={isGameWon}  handleModalClose={onSolutionsClose} stats={stats} guesses={guesses} />
+        <SolutionModal
+          open={isSolutionsOpen}
+          isDarkMode={isDarkMode}
+          isGameWon={isGameWon}
+          handleModalClose={onSolutionsClose}
+          stats={stats}
+          guesses={guesses}
+          trip={currentTrip}
+          solution={currentSolution}
+          isPracticeMode={isPracticeMode}
+          onNewPracticeGame={handleNewPracticeGame}
+        />
         <StatsModal open={isStatsOpen} isDarkMode={isDarkMode} stats={stats} handleClose={onStatsClose} />
         <SettingsModal open={isSettingsOpen} isDarkMode={isDarkMode} handleClose={onSettingsClose} onSettingsChange={setSettings} />
       </Segment>
