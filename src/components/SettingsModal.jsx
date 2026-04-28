@@ -29,6 +29,26 @@ const SettingsModal = (props, state) => {
     onSettingsChange(settings);
   }
 
+  const includeWeekendPracticeToggleChanged = (event, value) => {
+    const settings = { ...loadSettings() };
+    settings.practice = settings.practice || {};
+    settings.practice.includeWeekend = value.checked;
+
+    saveSettings(settings);
+    setSettings(settings);
+    onSettingsChange(settings);
+  }
+
+  const includeWeekdayPracticeToggleChanged = (event, value) => {
+    const settings = { ...loadSettings() };
+    settings.practice = settings.practice || {};
+    settings.practice.includeWeekday = value.checked;
+
+    saveSettings(settings);
+    setSettings(settings);
+    onSettingsChange(settings);
+  }
+
   return (
     <Modal closeIcon open={open} onClose={handleClose} size='tiny' className={isDarkMode ? 'settings-modal dark' : 'settings-modal'}>
       <Modal.Header>Settings</Modal.Header>
@@ -51,6 +71,28 @@ const SettingsModal = (props, state) => {
                 name='showAnswerStatusBadgesToggle'
                 onChange={showAnswerStatusBadgesToggleChanged}
                 checked={settings.display.showAnswerStatusBadges} />
+            </Grid.Column>
+          </Grid.Row>
+          <Grid.Row>
+            <Grid.Column className='fourteen wide'>
+              Include weekday puzzles in Practice mode
+            </Grid.Column>
+            <Grid.Column className='two wide'>
+              <Checkbox toggle className='float-right'
+                name='includeWeekdayPracticeToggle'
+                onChange={includeWeekdayPracticeToggleChanged}
+                checked={settings.practice ? (settings.practice.includeWeekday ?? true) : true} />
+            </Grid.Column>
+          </Grid.Row>
+          <Grid.Row>
+            <Grid.Column className='fourteen wide'>
+              Include weekend puzzles in Practice mode
+            </Grid.Column>
+            <Grid.Column className='two wide'>
+              <Checkbox toggle className='float-right'
+                name='includeWeekendPracticeToggle'
+                onChange={includeWeekendPracticeToggleChanged}
+                checked={settings.practice && settings.practice.includeWeekend} />
             </Grid.Column>
           </Grid.Row>
           {

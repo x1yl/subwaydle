@@ -10,6 +10,12 @@ export const defaultSettings = {
   }
 }
 
+// settings related to practice mode
+defaultSettings.practice = {
+  includeWeekend: false,
+  includeWeekday: true,
+}
+
 export const saveSettings = (gameSettings) => {
   saveSettingsToLocalStorage(gameSettings);
 }

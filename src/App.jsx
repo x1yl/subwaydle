@@ -21,6 +21,7 @@ import {
   todaysSolution,
   getSolution,
   getPracticeTrip,
+  getTripServiceType,
   todayGameIndex,
   NIGHT_GAMES,
 } from './utils/answerValidations';
@@ -104,11 +105,17 @@ const App = () => {
     setCorrectRoutes([]);
   }
 
-  const handleEnterPracticeMode = () => {
-    const trip = getPracticeTrip();
+  const handleEnterPracticeMode = (fromPathname = false) => {
+    const includeWeekend = settings.practice?.includeWeekend;
+    const includeWeekday = settings.practice?.includeWeekday ?? true;
+    console.info('Entering practice mode — includeWeekday:', includeWeekday, 'includeWeekend:', includeWeekend);
+    const trip = getPracticeTrip({ includeWeekend, includeWeekday });
     setPracticeTrip(trip);
     setIsPracticeMode(true);
     resetGameStatus();
+    if (!fromPathname) {
+      try { window.history.pushState({}, '', '/practice'); } catch(e){}
+    }
   }
 
   const handleExitPracticeMode = () => {
@@ -132,14 +139,33 @@ const App = () => {
   }
 
   const handleNewPracticeGame = () => {
-    const trip = getPracticeTrip();
+    const trip = getPracticeTrip({ includeWeekend: settings.practice?.includeWeekend, includeWeekday: settings.practice?.includeWeekday });
     setPracticeTrip(trip);
     resetGameStatus();
   }
 
+  // support direct /practice URL
+  useEffect(() => {
+    const pathname = window.location && window.location.pathname;
+    if (pathname === '/practice') {
+      handleEnterPracticeMode(true);
+    }
+    // handle back/forward to reflect practice mode
+    const onPop = () => {
+      const p = window.location && window.location.pathname;
+      if (p === '/practice' && !isPracticeMode) {
+        handleEnterPracticeMode(true);
+      } else if (p !== '/practice' && isPracticeMode) {
+        handleExitPracticeMode();
+      }
+    }
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [settings]);
+
   const onChar = (routeId) => {
     if (!isStatsOpen && !isGameWon && currentGuess.length < 3 && guesses.length < ATTEMPTS) {
-      if (!routesWithNoService().includes(routeId)) {
+      if (!noServiceRoutes.includes(routeId)) {
         setCurrentGuess([...currentGuess, routeId]);
       }
     }
@@ -249,6 +275,14 @@ const App = () => {
   }
 
   const isDarkMode = (NIGHT_GAMES.includes(todayGameIndex())) || (todayGameIndex() > Math.max(...NIGHT_GAMES) && settings.display.darkMode);
+  const includeWeekendPractice = settings.practice?.includeWeekend ?? false;
+  const includeWeekdayPractice = settings.practice?.includeWeekday ?? true;
+  const practiceServiceType = getTripServiceType(currentTrip, {
+    preferWeekday: isPracticeMode && includeWeekdayPractice && !includeWeekendPractice,
+    preferWeekend: isPracticeMode && includeWeekendPractice && !includeWeekdayPractice,
+  });
+  const practiceNoServiceRoutes = (isPracticeMode && practiceServiceType === 'weekend') ? ['B', 'W'] : [];
+  const noServiceRoutes = isPracticeMode ? practiceNoServiceRoutes : routesWithNoService();
 
   return (
     <div className={"outer-app-wrapper " + (isDarkMode ? 'dark' : '')}>
@@ -259,6 +293,13 @@ const App = () => {
             {(!isNight && isWeekend) && "Weekend "}Subwaydle
             {isAccessible && " ♿️"}
             {isPracticeMode && " — Practice"}
+            <Header.Subheader>
+              {
+                isPracticeMode
+                  ? (practiceServiceType === 'weekend' ? 'Weekend service' : 'Weekday service')
+                  : (isNight ? 'Late Night service' : (isWeekend ? 'Weekend service' : 'Weekday service'))
+              }
+            </Header.Subheader>
             {
                isNight &&
                <Popup
@@ -285,7 +326,7 @@ const App = () => {
             name={isPracticeMode ? 'calendar' : 'play circle'}
             size='large'
             link
-            onClick={isPracticeMode ? handleExitPracticeMode : handleEnterPracticeMode}
+            onClick={() => isPracticeMode ? handleExitPracticeMode() : handleEnterPracticeMode()}
             title={isPracticeMode ? 'Back to Daily Game' : 'Practice Mode'}
           />
         </Segment>
@@ -320,7 +361,7 @@ const App = () => {
         </Segment>
         <Segment basic>
           <Keyboard
-            noService={routesWithNoService()}
+            noService={noServiceRoutes}
             isDarkMode={isDarkMode}
             onChar={onChar}
             onDelete={onDelete}

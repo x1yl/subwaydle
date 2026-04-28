@@ -197,11 +197,57 @@ const todaysAnswers = () => {
   return weekdayAnswers;
 }
 
-export const getPracticeTrip = () => {
-  const answers = todaysAnswers();
+export const getPracticeTrip = (options = {}) => {
+  // options.includeWeekend, options.includeWeekday control pools
+  const includeWeekend = options.includeWeekend;
+  const includeWeekday = (options.includeWeekday === undefined) ? true : options.includeWeekday;
+
+  let answersPool = [];
+  if (includeWeekend && includeWeekday) {
+    const combined = [...weekdayAnswers, ...weekendAnswers];
+    const seen = new Set();
+    answersPool = combined.filter(a => {
+      const key = a.join('-');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  } else if (includeWeekend) {
+    // Defensive filter: weekend-only practice should never include no-weekend-service routes.
+    answersPool = weekendAnswers
+      .slice()
+      .filter(answer => !answer.some(route => ROUTES_WITH_NO_WEEKEND_SERVICE.includes(route)));
+  } else if (includeWeekday) {
+    answersPool = weekdayAnswers.slice();
+  } else {
+    // fallback to todaysAnswers if none selected
+    answersPool = todaysAnswers();
+  }
+
   const dailyTripStr = flattenedTodaysTrip();
-  const filtered = answers.filter(t => t.join('-') !== dailyTripStr);
+  const filtered = answersPool.filter(t => t.join('-') !== dailyTripStr);
   return filtered[Math.floor(Math.random() * filtered.length)];
+}
+
+export const getTripServiceType = (trip, options = {}) => {
+  if (!trip) return 'weekday';
+  const preferWeekday = options.preferWeekday === true;
+  const preferWeekend = options.preferWeekend === true;
+  const key = trip.join('-');
+  const inWeekend = weekendAnswerSet.has(key);
+  const inWeekday = weekdayAnswerSet.has(key);
+
+  if (inWeekend && !inWeekday) return 'weekend';
+  if (inWeekday && !inWeekend) return 'weekday';
+
+  // Respect caller preference when a trip exists in both service datasets.
+  if (inWeekend && inWeekday) {
+    if (preferWeekday && !preferWeekend) return 'weekday';
+    if (preferWeekend && !preferWeekday) return 'weekend';
+  }
+
+  // If a trip exists in both sets, prefer weekend label for display.
+  return inWeekend ? 'weekend' : 'weekday';
 }
 
 export const isWinningGuess = (guess, tripOverride) => {
