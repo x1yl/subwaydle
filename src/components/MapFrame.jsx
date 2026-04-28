@@ -94,7 +94,7 @@ const MapFrame = (props) => {
     if (map.current) return; // initialize map only once
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/theweekendest/ck1fhati848311cp6ezdzj5cm?optimize=true',
+      style: 'mapbox://styles/fryvex/cmb36yvy700ac01qvfp3deajd?optimize=true',
       center: [lng, lat],
       bearing: MANHATTAN_TILT,
       minZoom: 9,
@@ -192,9 +192,116 @@ const MapFrame = (props) => {
         });
       }
     });
+  }, []);
 
+  // Update map sources/layers whenever the trip or solution changes
+  useEffect(() => {
+    if (!map.current) return;
 
-  });
+    const update = () => {
+      let coordinates = [];
+      [
+        {
+          route: trip[0],
+          begin: solution.origin,
+          end: solution.first_transfer_arrival,
+        },
+        {
+          route: trip[1],
+          begin: solution.first_transfer_departure,
+          end: solution.second_transfer_arrival,
+        },
+        {
+          route: trip[2],
+          begin: solution.second_transfer_departure,
+          end: solution.destination,
+        },
+      ].forEach((line, i) => {
+        const lineJson = lineGeoJson(line);
+        coordinates = coordinates.concat(lineJson.geometry.coordinates);
+        const layerId = `line-${i}`;
+        if (map.current.getSource(layerId)) {
+          map.current.getSource(layerId).setData(lineJson);
+        } else {
+          map.current.addSource(layerId, {
+            "type": "geojson",
+            "data": lineJson
+          });
+          map.current.addLayer({
+            "id": layerId,
+            "type": "line",
+            "source": layerId,
+            "layout": {
+              "line-join": "miter",
+              "line-cap": "round",
+            },
+            "paint": {
+              "line-width": 2,
+              "line-color": ["get", "color"],
+            }
+          });
+        }
+      });
+
+      const stopsJson = stopsGeoJson();
+      if (map.current.getSource("Stops")) {
+        map.current.getSource("Stops").setData(stopsJson);
+      } else {
+        map.current.addSource("Stops", {
+          "type": "geojson",
+          "data": stopsJson
+        });
+        map.current.addLayer({
+          "id": "Stops",
+          "type": "symbol",
+          "source": "Stops",
+          "layout": {
+            "text-field": ['get', 'name'],
+            "text-size": 12,
+            "text-font": ['Lato Bold', "Open Sans Bold","Arial Unicode MS Bold"],
+            "text-optional": false,
+            "text-justify": "auto",
+            'text-allow-overlap': false,
+            "text-padding": 1,
+            "text-variable-anchor": ["bottom-right", "top-right", "bottom-left", "top-left", "right", "left", "bottom"],
+            "text-radial-offset": 0.5,
+            "icon-image": "express-stop",
+            "icon-size": 8/13,
+            "icon-allow-overlap": true,
+          },
+          "paint": {
+            "text-color": '#ffffff',
+          },
+        });
+      }
+
+      // update bounds to fit new route
+      if (coordinates.length) {
+        const bounds = coordinates.reduce((bounds, coord) => {
+          return bounds.extend(coord);
+        }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
+
+        if (!bounds.isEmpty()) {
+          map.current.fitBounds(bounds, {
+            padding: {
+              top: 20,
+              right: 20,
+              left: 20,
+              bottom: 150,
+            },
+            bearing: MANHATTAN_TILT,
+          });
+        }
+      }
+    };
+
+    if (!map.current.isStyleLoaded()) {
+      map.current.once('load', update);
+    } else {
+      update();
+    }
+
+  }, [trip, solution]);
 
   useEffect(() => {
     if (!map.current) return; // wait for map to initialize
